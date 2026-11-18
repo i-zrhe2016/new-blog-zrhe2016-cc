@@ -1,0 +1,99 @@
+---
+{
+  "uid": "BpbuHNHckZWbDdxJUMSk",
+  "title": "dd快速重装系统",
+  "slug": "dd",
+  "alias": "posts/dd",
+  "published_date": "2025-12-13T07:34:00+00:00",
+  "all_tags": "[]",
+  "publish": true,
+  "discoverable": false,
+  "is_page": false,
+  "canonical_url": "",
+  "meta_description": "快速重装 dd重装为ubuntu22.04 curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/",
+  "meta_image": "",
+  "lang": "",
+  "class_name": "",
+  "first_published_at": "2025-12-13T07:34:00+00:00",
+  "last_modified": "2026-11-18T07:44:30.173533+00:00"
+}
+---
+## 快速重装
+
+### dd重装为ubuntu22.04
+
+```text
+curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && chmod +x reinstall.sh && ./reinstall.sh ubuntu22.04 --password 'FncPBRa9uu*LhA'
+
+```
+
+### dd重装为rocky 8
+
+```text
+curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && chmod +x reinstall.sh && ./reinstall.sh rocky 8 --password 'FncPBRa9uu*LhA'
+
+```
+
+### dd重装为centos 8
+
+```text
+curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && chmod +x reinstall.sh && ./reinstall.sh centos 8 --password 'FncPBRa9uu*LhA'
+
+```
+
+### dd重装为almalinux 8
+
+```text
+curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && chmod +x reinstall.sh && ./reinstall.sh almalinux 8 --password 'FncPBRa9uu*LhA'
+
+```
+
+### dd重装为anolis 8
+
+```text
+curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh || wget -O reinstall.sh https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh && chmod +x reinstall.sh && ./reinstall.sh anolis 8 --password 'FncPBRa9uu*LhA'
+
+```
+
+### usage
+
+```text
+Usage:  ./reinstall.sh anolis      7|8|23
+                       opencloudos 8|9|23
+                       rocky       8|9|10
+                       oracle      8|9|10
+                       almalinux   8|9|10
+                       centos      9|10
+                       fnos        1
+                       nixos       25.11
+                       fedora      42|43
+                       debian      9|10|11|12|13
+                       alpine      3.20|3.21|3.22|3.23
+                       opensuse    15.6|16.0|tumbleweed
+                       openeuler   20.03|22.03|24.03|25.09
+                       ubuntu      16.04|18.04|20.04|22.04|24.04|25.10 [--minimal]
+                       kali
+                       arch
+                       gentoo
+                       aosc
+                       redhat      --img="http://access.cdn.redhat.com/xxx.qcow2"
+                       dd          --img="http://xxx.com/yyy.zzz" (raw image stores in raw/vhd/tar/gz/xz/zst)
+                       windows     --image-name="windows xxx yyy" --lang=xx-yy
+                       windows     --image-name="windows xxx yyy" --iso="http://xxx.com/xxx.iso"
+                       netboot.xyz
+
+       Options:        For Linux/Windows:
+                       [--password  PASSWORD]
+                       [--ssh-key   KEY]
+                       [--ssh-port  PORT]
+                       [--web-port  PORT]
+                       [--frpc-toml PATH]
+
+                       For Windows Only:
+                       [--allow-ping]
+                       [--rdp-port   PORT]
+                       [--add-driver INF_OR_DIR]
+
+Manual: https://github.com/bin456789/reinstall
+
+```

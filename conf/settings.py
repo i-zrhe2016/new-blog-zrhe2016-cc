@@ -9,6 +9,11 @@ PROJECT_NAME = "🐼 BEARBLOG 🐼"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Keep personal blog content alongside the source for Git versioning.
+PERSONAL_CONTENT_DIR = os.getenv('PERSONAL_CONTENT_DIR') or (
+    BASE_DIR / 'content' if os.getenv('SINGLE_BLOG') == 'True' else None
+)
+
 SECRET_KEY = os.getenv('SECRET')
 PAYMENT_WEBHOOK_SECRET = os.getenv('PAYMENT_WEBHOOK_SECRET', '')
 PAYMENT_CHECKOUT_URL = os.getenv('PAYMENT_CHECKOUT_URL', '')
@@ -154,6 +159,9 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Preserve migrated article URLs on a clean deployment / collectstatic.
+if PERSONAL_CONTENT_DIR and (Path(PERSONAL_CONTENT_DIR) / 'assets').is_dir():
+    STATICFILES_DIRS.append(('migrated', Path(PERSONAL_CONTENT_DIR) / 'assets'))
 GEOIP_PATH = "geoip/"
 
 # Enable WhiteNoise compression and cache-safe, hashed static asset names.

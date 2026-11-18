@@ -1,0 +1,9 @@
+[Unit]
+Description=Reconcile Bear Blog content files from SQLite
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/bearblog
+ExecStart=/usr/bin/docker compose exec -T bearblog python manage.py export_personal_content

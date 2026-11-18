@@ -90,6 +90,8 @@ class Blog(models.Model):
     @property
     def blank_bear_domain(self):
         current_host = os.getenv('MAIN_SITE_HOSTS').split(',')[0]
+        if os.getenv('SINGLE_BLOG') == 'True':
+            return current_host
         return f'{self.subdomain}.{current_host}'
 
     @property
@@ -98,7 +100,7 @@ class Blog(models.Model):
 
     @property
     def blank_useful_domain(self):
-        if self.domain:
+        if self.domain and os.getenv('SINGLE_BLOG') != 'True':
             return self.domain
         else:
             return f'{self.blank_bear_domain}'

@@ -15,6 +15,8 @@ def resolve_address(request):
     sites = os.getenv('MAIN_SITE_HOSTS').split(',')
 
     if any(http_host == site for site in sites):
+        if os.getenv('SINGLE_BLOG') == 'True':
+            return Blog.objects.select_related('user', 'user__settings').filter(user__is_active=True).order_by('pk').first()
         # Homepage
         return None
 
@@ -51,6 +53,8 @@ def clean_domain(domain):
 def home(request):
     blog = resolve_address(request)
     if not blog:
+        if os.getenv('SINGLE_BLOG') == 'True':
+            return redirect('signup_flow')
         # Don't cache here because of dashboard
         return render(request, 'landing.html')
 
