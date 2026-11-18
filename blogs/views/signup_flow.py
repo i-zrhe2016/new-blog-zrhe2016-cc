@@ -1,4 +1,6 @@
 
+import os
+
 from django.db import IntegrityError
 from django.shortcuts import render, redirect
 from django.utils.text import slugify
@@ -8,8 +10,12 @@ from blogs.models import Blog
 
 
 def signup(request):
+    single_blog = os.getenv('SINGLE_BLOG') == 'True'
+    if single_blog and Blog.objects.exists():
+        return redirect('account' if request.user.is_authenticated else 'account_login')
+
     title = request.POST.get('title', '')
-    subdomain = slugify(request.POST.get('subdomain', '')).replace('_', '-')
+    subdomain = 'personal' if single_blog else slugify(request.POST.get('subdomain', '')).replace('_', '-')
     content = request.POST.get('content', '')
     email = request.POST.get('email', '').strip().lower()
     password = request.POST.get('password', '')
@@ -65,12 +71,14 @@ def signup(request):
             'subdomain': subdomain,
             'content': content,
             'email': email,
-            'password': password
+            'password': password,
+            'single_blog': single_blog,
         })
 
     return render(request, 'signup_flow/step_1.html', {
         'error_messages': error_messages,
         'title': title,
         'subdomain': subdomain,
-        'content': content
+        'content': content,
+        'single_blog': single_blog,
     })

@@ -14,6 +14,11 @@ class AccountAdapter(DefaultAccountAdapter):
     Pin the origin to MAIN_SITE_HOSTS[0] regardless of the request host.
     """
 
+    def is_open_for_signup(self, request):
+        if os.getenv('SINGLE_BLOG') == 'True':
+            return False
+        return super().is_open_for_signup(request)
+
     def _force_canonical(self, url):
         canonical_host = os.getenv('MAIN_SITE_HOSTS').split(',')[0].strip()
         parts = urlsplit(url)
