@@ -1,0 +1,58 @@
+name: CI and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SECRET: ci-only-secret
+      SALT: ci-only-salt
+      MAIN_SITE_HOSTS: localhost,testserver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py test
+      - run: python -I scripts/test_sync_personal_content.py
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure this is the current master commit
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/master | cut -f1)" = "$GITHUB_SHA"
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.TAILSCALE_CI_TAG || 'tag:ci' }}
+      - name: Deploy application
+        env:
+          DEPLOY_HOST: ${{ vars.TAILSCALE_DEPLOY_HOST || 'deploy' }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git archive "$GITHUB_SHA" | tailscale ssh "root@$DEPLOY_HOST" "set -eu; umask 077; mkdir -p /opt/bearblog/releases; release=\$(mktemp -d /opt/bearblog/releases/${GITHUB_SHA}.XXXXXXXX); mkdir -p \"\$release/app\"; tar -xf - -C \"\$release/app\"; bash \"\$release/app/deploy/deploy.sh\" \"\$release\" $GITHUB_SHA"
+      - name: Check public site
+        run: curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --retry-all-errors https://blog.zrhe2016.cc/ --output /dev/null
