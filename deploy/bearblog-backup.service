@@ -4,4 +4,5 @@ Description=Back up Bear Blog database and migrated assets
 [Service]
 Type=oneshot
 UMask=0077
-ExecStart=/usr/bin/python3 /opt/bearblog/backup_database.py
+EnvironmentFile=-/opt/bearblog/backup-r2.env
+ExecStart=/usr/bin/python3 /opt/bearblog/backup_database.py --upload-r2
