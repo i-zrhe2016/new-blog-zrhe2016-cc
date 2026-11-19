@@ -60,6 +60,12 @@ with sqlite3.connect(f'file:{source}?mode=ro', uri=True) as db, sqlite3.connect(
     db.backup(backup)
 PY
 
+# Require R2 configuration before replacing the running local backup service.
+if [[ ! -s "$root/backup-r2.env" ]] || ! python3 -c 'import boto3'; then
+    printf '%s\n' 'R2 backup credentials or boto3 are missing; see CONTENT.md' >&2
+    exit 1
+fi
+
 # Install the daily backup before changing the running application. Keep all
 # existing backups; operators can copy them off-host and manage retention.
 install -m 0755 "$release/app/deploy/backup_database.py" "$root/backup_database.py"
