@@ -60,6 +60,18 @@ with sqlite3.connect(f'file:{source}?mode=ro', uri=True) as db, sqlite3.connect(
     db.backup(backup)
 PY
 
+# Install the daily backup before changing the running application. Keep all
+# existing backups; operators can copy them off-host and manage retention.
+install -m 0755 "$release/app/deploy/backup_database.py" "$root/backup_database.py"
+install -m 0644 "$release/app/deploy/bearblog-backup.service" /etc/systemd/system/bearblog-backup.service
+install -m 0644 "$release/app/deploy/bearblog-backup.timer" /etc/systemd/system/bearblog-backup.timer
+systemctl daemon-reload
+systemctl enable --now bearblog-backup.timer
+systemctl start bearblog-backup.service
+if systemctl list-unit-files --no-legend 'bearblog-content-export.timer' | grep -q '^bearblog-content-export.timer'; then
+    systemctl disable --now bearblog-content-export.timer
+fi
+
 # These commands use the new image and existing persistent data, without importing
 # repository content over the database or deleting online edits.
 "${compose[@]}" run --rm --no-deps --entrypoint python bearblog manage.py migrate --noinput
