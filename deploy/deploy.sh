@@ -24,7 +24,26 @@ docker build -t "$image" "$release"
 
 # Compose resolves paths relative to the first compose file, preserving all volumes.
 override="$release/compose.deploy.yaml"
-printf '# Managed by bearblog CI/CD\nservices:\n  bearblog:\n    image: %s\n' "$image" > "$override"
+cat > "$override" <<YAML
+# Managed by bearblog CI/CD
+services:
+  bearblog:
+    image: $image
+    environment:
+      PERSONAL_BLOG_ACCESS: public
+  bearblog-private:
+    image: $image
+    restart: unless-stopped
+    env_file: /opt/bearblog/.env
+    environment:
+      PERSONAL_BLOG_ACCESS: tailnet
+    volumes:
+      - /opt/bearblog/data:/data
+      - /opt/bearblog/staticfiles:/app/staticfiles
+      - /opt/bearblog/content:/app/content
+    ports:
+      - "127.0.0.1:19444:8000"
+YAML
 compose=(docker compose -f "$root/compose.yaml" -f "$override")
 
 # SQLite's backup API makes a consistent snapshot even while the site is running.
@@ -50,9 +69,11 @@ PY
 # Keep the image override so future ordinary compose operations use this release.
 cp "$override" "$root/compose.override.yaml.tmp"
 mv -f "$root/compose.override.yaml.tmp" "$root/compose.override.yaml"
-docker compose up -d --no-build bearblog
-if [[ -z "$(docker compose ps --status running -q bearblog)" ]]; then
-    printf '%s\n' 'Deployment failed: bearblog container is not running' >&2
-    exit 1
-fi
+docker compose up -d --no-build bearblog bearblog-private
+for service in bearblog bearblog-private; do
+    if [[ -z "$(docker compose ps --status running -q "$service")" ]]; then
+        printf 'Deployment failed: %s container is not running\n' "$service" >&2
+        exit 1
+    fi
+done
 printf 'Deployed %s\n' "$revision"

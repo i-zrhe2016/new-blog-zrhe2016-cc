@@ -71,6 +71,17 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+# Only enable tailnet mode on a separate process reachable exclusively via
+# Tailscale Serve. Never expose that process through a public proxy or Funnel.
+PERSONAL_BLOG_ACCESS = os.getenv('PERSONAL_BLOG_ACCESS', 'normal')
+if PERSONAL_BLOG_ACCESS not in ('normal', 'public', 'tailnet'):
+    raise ValueError('Invalid PERSONAL_BLOG_ACCESS')
+if PERSONAL_BLOG_ACCESS != 'normal':
+    if os.getenv('SINGLE_BLOG') != 'True':
+        raise ValueError('Personal blog access requires SINGLE_BLOG=True')
+    MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
+                      'blogs.private_access.PersonalBlogAccessMiddleware')
+
 ROOT_URLCONF = 'conf.urls'
 TEMPLATES = [
     {
