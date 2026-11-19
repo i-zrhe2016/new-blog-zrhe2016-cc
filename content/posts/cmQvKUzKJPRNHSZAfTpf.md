@@ -6,7 +6,7 @@
   "alias": "posts/agent-harness",
   "published_date": "2026-10-12T11:59:00+00:00",
   "all_tags": "[\"AI\", \"Codex\", \"Agent\", \"Workflow\", \"Software Engineering\"]",
-  "publish": true,
+  "publish": false,
   "discoverable": false,
   "is_page": false,
   "canonical_url": "",

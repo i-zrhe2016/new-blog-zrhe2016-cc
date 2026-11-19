@@ -6,7 +6,7 @@
   "alias": "posts/skill-eval",
   "published_date": "2026-10-12T08:42:00+00:00",
   "all_tags": "[]",
-  "publish": true,
+  "publish": false,
   "discoverable": false,
   "is_page": false,
   "canonical_url": "",
