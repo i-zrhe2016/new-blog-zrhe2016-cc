@@ -130,7 +130,7 @@ def export_content(root=None):
 
 def schedule_export(sender, **kwargs):
     root = store_path()
-    if root and not exports_suspended.get():
+    if root and getattr(settings, 'PERSONAL_CONTENT_AUTO_EXPORT', False) and not exports_suspended.get():
         def export_if_blog_exists():
             from blogs.models import Blog
             if Blog.objects.exists():

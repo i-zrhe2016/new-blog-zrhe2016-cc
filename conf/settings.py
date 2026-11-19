@@ -9,10 +9,11 @@ PROJECT_NAME = "🐼 BEARBLOG 🐼"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Keep personal blog content alongside the source for Git versioning.
+# Location of optional exports and migrated static assets.
 PERSONAL_CONTENT_DIR = os.getenv('PERSONAL_CONTENT_DIR') or (
     BASE_DIR / 'content' if os.getenv('SINGLE_BLOG') == 'True' else None
 )
+PERSONAL_CONTENT_AUTO_EXPORT = os.getenv('PERSONAL_CONTENT_AUTO_EXPORT') == 'True'
 
 SECRET_KEY = os.getenv('SECRET')
 PAYMENT_WEBHOOK_SECRET = os.getenv('PAYMENT_WEBHOOK_SECRET', '')

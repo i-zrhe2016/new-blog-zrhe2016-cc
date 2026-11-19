@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up Bear Blog daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

@@ -19,7 +19,7 @@ class PersonalContentTests(TransactionTestCase):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        settings = override_settings(PERSONAL_CONTENT_DIR=self.root)
+        settings = override_settings(PERSONAL_CONTENT_DIR=self.root, PERSONAL_CONTENT_AUTO_EXPORT=True)
         settings.enable()
         self.addCleanup(settings.disable)
         Stylesheet.objects.create(identifier='default', css='body { color: black; }')

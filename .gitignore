@@ -1,3 +1,7 @@
+# Personal content and database backups
+/content/
+/backups/
+
 # Personal content synchronization locks
 .content.lock
 .content-*
