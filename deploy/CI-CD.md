@@ -13,6 +13,24 @@ The workflow uses `tag:ci` for the temporary runner node by default. Define the 
 
 The GitHub `production` environment can be configured with protection rules if deployment approval is desired. Pull requests never receive deployment credentials or run on the deployment server.
 
+## Private dashboard
+
+The managed Compose override runs two copies of the application: `bearblog` in public mode on loopback port 19443, and `bearblog-private` in tailnet mode on loopback port 19444. Both use the same database and content. The private process automatically uses the sole active blog owner; it refuses access if there is not exactly one blog or the owner is inactive. The public process rejects dashboard and account routes even when a browser has an old authenticated session.
+
+After the first deployment of this configuration, point the existing **tailnet-only** Tailscale Serve listener on port 9443 to `http://127.0.0.1:19444`. Keep the public Funnel origin on port 19443 and never expose port 19444 through Funnel or another public proxy. Check the tailnet ACLs/grants: anyone allowed to reach the private listener can manage the blog without a password. The private dashboard is at `https://deploy.taile2c45c.ts.net:9443/dashboard/`.
+
+Verify both listeners and an actual dashboard edit before considering the change complete; a successful container start does not verify the Tailscale routing. Keep CSRF protection enabled. If Serve is reset or changed, recheck that the private listener remains tailnet-only.
+
+## Manual rollout on 2026-11-19
+
+The private dashboard was deployed from the tested working tree without creating a Git commit. The running image is `bearblog-private:private-access-5J3KNiB4`, built on the previous production image `bearblog-ci:284a962be6fbff76872bbd074e7139bfe4077763` with only the access middleware, settings, dashboard template, and access tests overlaid. The original settings and template matched their Git baselines before replacement.
+
+The root-only release directory `/opt/bearblog/releases/private-access-5J3KNiB4` retains the previous Compose override (`compose.before.yaml`), SQLite backup (`database.before.db`), and Tailscale routing snapshots (`serve.before.json`, `serve.after.json`). Only the tailnet-only 9443 upstream changed, from loopback 19443 to 19444. Existing public Funnel and other Serve listeners were preserved.
+
+Verification covered the live browser dashboard, posts/editor pages, creation and removal of an unpublished temporary draft, and rejection of a cross-site write. Public dashboard/account/action routes returned 403. The public custom-domain `/admin/` is also protected by an existing Cloudflare Access redirect; the origin and workers.dev admin route returned 403. The public home page remained accessible.
+
+These repository changes must be included in subsequent CI releases to retain this behavior. A deployment from an older commit can restore the previous access logic.
+
 ## What deployment changes
 
 The server must retain its existing `/opt/bearblog/compose.yaml`, `Dockerfile`, production settings, Cloudflare middleware, and `.env`. The script builds a revision-specific image using those production files and the Git commit, creates a consistent SQLite backup in `/opt/bearblog/backups`, runs migrations and `collectstatic`, and recreates the service. Database, exported content, and static files remain in their existing volumes. A generated `compose.override.yaml` records the active image; deployment refuses to overwrite one it does not manage. Release directories, images, and backups are retained and require periodic maintenance.

@@ -63,9 +63,11 @@
 
 <h2>Account</h2>
 
+{% if not request.tailnet_private_access %}
 <p>
     <a href="{% url 'account_logout' %}">Sign out</a>
 </p>
+{% endif %}
 
 <p>
     <a href="{% url 'dashboard_customisation' %}">Customise dashboard</a>
