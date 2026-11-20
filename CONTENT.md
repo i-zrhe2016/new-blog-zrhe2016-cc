@@ -1,6 +1,16 @@
 # 文章数据与备份
 
-线上 SQLite 数据库是文章、草稿、站点设置和账号等数据的主要存储。`content/` 是可选的旧格式导出和迁移资源目录，不再提交到 Git；现有本地文件不会因停止跟踪而删除。保存文章时默认不再自动导出 Markdown，必要时可显式设置 `PERSONAL_CONTENT_AUTO_EXPORT=True` 或运行 `python manage.py export_personal_content`。
+线上 SQLite 数据库是文章、草稿、站点设置、账号和新上传媒体的主要存储。`content/` 是可选的旧格式导出和迁移资源目录，不再提交到 Git；现有本地文件不会因停止跟踪而删除。保存文章时默认不再自动导出 Markdown，必要时可显式设置 `PERSONAL_CONTENT_AUTO_EXPORT=True` 或运行 `python manage.py export_personal_content`。
+
+## 将已有图片迁入数据库
+
+部署代码并执行 Django 迁移后，在访问生产数据库的应用容器中运行以下命令（目录应为容器内的实际路径）。先备份数据库和原资源；迁移期间暂停写入文章和上传。`MAIN_SITE_HOSTS` 首项应为公开域名，生成的新图片链接使用该域名。
+
+```bash
+python manage.py import_media_to_database --assets /opt/bearblog/content/assets --objects
+```
+
+`--assets` 导入本地迁移图片和图表，保留 `/static/migrated/` 链接；该目录必须存在。`--objects` 使用现有 `OBJECT_STORAGE_*` 配置从对象存储读取媒体和正文中引用的图表，将已识别的旧链接替换为数据库图片地址；不使用对象存储时可省略此参数。下载失败或本地同路径内容冲突时整个数据库事务回滚，可以修复后重试；命令不会删除原文件或对象。执行后核对文章、封面、媒体中心和公开入口，再生成一次完整备份。迁移前已经分享的外部对象存储链接、配置前缀以外的链接和其他系统中的链接不会自动改写，应保留原对象或另行处理。代理须将 `/media-files/` 和 `/static/migrated/` 请求转发到 Django；若代理直接处理静态文件，需要调整代理配置。
 
 ## 备份
 
@@ -14,7 +24,7 @@ sudo systemctl start bearblog-backup.service
 sudo systemctl status bearblog-backup.service bearblog-backup.timer
 ```
 
-每次备份在 `/opt/bearblog/backups/backup-<UTC时间>-<随机值>/` 下包含 `database.db` 和 `assets.tar.gz`。数据库通过 SQLite backup API 在线生成一致快照并做完整性检查；资源包包含 `/opt/bearblog/content/assets` 下的迁移图片和图表。两者分别采集，不保证资源与数据库同时刻原子一致；操作期间避免修改迁移资源。完成本地备份后，服务上传两个文件到 R2 的 `blog-backup/backups/<备份目录>/`，确认对象大小和 SHA-256 元数据后写入 `manifest.json`；只把有清单的目录视为完整备份。上传失败时服务报错，本地备份仍保留；查看 `journalctl -u bearblog-backup.service`。备份包含草稿、账号及其他敏感数据，应限制访问；备份不会自动清理，需监控磁盘和 R2 空间。文章的外部对象存储文件不在此备份范围内，应另外备份。
+每次备份在 `/opt/bearblog/backups/backup-<UTC时间>-<随机值>/` 下包含 `database.db` 和 `assets.tar.gz`。数据库通过 SQLite backup API 在线生成一致快照并做完整性检查；资源包包含 `/opt/bearblog/content/assets` 下的迁移图片和图表。两者分别采集，不保证资源与数据库同时刻原子一致；操作期间避免修改迁移资源。完成本地备份后，服务上传两个文件到 R2 的 `blog-backup/backups/<备份目录>/`，确认对象大小和 SHA-256 元数据后写入 `manifest.json`；只把有清单的目录视为完整备份。上传失败时服务报错，本地备份仍保留；查看 `journalctl -u bearblog-backup.service`。备份包含草稿、账号及其他敏感数据，应限制访问；备份不会自动清理，需监控磁盘和 R2 空间。文章的外部对象存储文件在迁入数据库前不在此备份范围内，应另外备份。数据库中的媒体随数据库快照一起备份；图片增多会增加数据库、备份和上传所需空间及时间。
 
 部署此版本前，在服务器创建仅 root 可读的 `/opt/bearblog/backup-r2.env`，设置 `BACKUP_R2_ACCESS_KEY_ID` 和 `BACKUP_R2_SECRET_ACCESS_KEY`（每行 `变量名=值`）。使用仅限 `blog-backup` 存储桶的 R2 对象读写凭据，不要提交或通过聊天发送密钥。凭据缺失时任务仍会创建本地快照，但上传失败并报告错误；部署脚本在迁移前运行该服务，因此配置不完整会阻止部署。R2 上传依赖服务器 Python 环境中的 boto3。
 

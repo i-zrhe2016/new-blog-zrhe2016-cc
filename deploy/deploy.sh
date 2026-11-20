@@ -20,7 +20,9 @@ cp Dockerfile deployment_settings.py deployment_context.py "$release/"
 mkdir -p "$release/cloudflare-worker"
 cp cloudflare-worker/origin_middleware.py "$release/cloudflare-worker/"
 image="bearblog-ci:$revision"
-docker build -t "$image" "$release"
+base_image="bearblog-ci-base:$revision"
+docker build -t "$base_image" "$release"
+docker build --build-arg "BASE_IMAGE=$base_image" -f "$release/app/deploy/Dockerfile.plantuml" -t "$image" "$release/app/deploy"
 
 # Compose resolves paths relative to the first compose file, preserving all volumes.
 override="$release/compose.deploy.yaml"

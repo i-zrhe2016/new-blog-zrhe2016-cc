@@ -10,9 +10,11 @@ from PIL import Image, ImageOps
 import pillow_heif
 import os
 import boto3
-import threading
 
-from blogs.models import Blog, Media
+from blogs.models import Blog, Media, StoredAsset
+from blogs.stored_assets import store_asset
+from django.db import transaction
+from urllib.parse import urlsplit
 
 pillow_heif.register_heif_opener()
 
@@ -108,11 +110,9 @@ def upload_image(request, id):
     return JsonResponse({'error': 'Upload failed.'}, status=400)
 
 
+@transaction.atomic
 def upload_files(blog, file_list, optimise=True):
     file_links = []
-    storage_config = get_storage_config()
-    if not storage_config['bucket'] or not storage_config['public_url']:
-        raise UploadError('Object storage is not configured.', status_code=503)
 
     for file in file_list:
         # Fair use limit
@@ -149,46 +149,11 @@ def upload_files(blog, file_list, optimise=True):
             new_file_name = f"{file_name}-{count}"
         file_name = new_file_name
         
-        filepath = f'{blog.subdomain}/{file_name}.{extension}'
-        url = f"{storage_config['public_url']}/{filepath}"
-
-        file_data = file.read()
-        content_type = file.content_type
-
+        url = store_asset(file.read(), file.content_type, f'{file_name}.{extension}', blog)
         Media.objects.create(blog=blog, url=url)
         file_links.append(url)
-
-        thread = threading.Thread(
-            target=upload_to_object_storage,
-            args=(filepath, file_data, content_type)
-        )
-        thread.start()
     
     return sorted(file_links)
-
-
-def upload_to_object_storage(filepath, file_data, content_type):
-    config = get_storage_config()
-    client = boto3.session.Session().client(
-        's3',
-        endpoint_url=config['endpoint_url'],
-        region_name=config['region'],
-        aws_access_key_id=config['access_key_id'],
-        aws_secret_access_key=config['secret_access_key'],
-    )
-
-    try:
-        params = {
-            'Bucket': config['bucket'],
-            'Key': filepath,
-            'Body': file_data,
-            'ContentType': content_type,
-        }
-        if config['acl']:
-            params['ACL'] = config['acl']
-        client.put_object(**params)
-    except Exception:
-        pass
 
 
 def process_image(file, optimise):
@@ -237,29 +202,24 @@ def delete_selected_media(request, id):
     
     if request.method == "POST":
         selected_media = request.POST.getlist('selected_media')
-        config = get_storage_config()
-        if not config['bucket'] or not config['public_url']:
-            return HttpResponseForbidden("Error: Object storage is not configured")
-        client = boto3.session.Session().client(
-            's3',
-            endpoint_url=config['endpoint_url'],
-            region_name=config['region'],
-            aws_access_key_id=config['access_key_id'],
-            aws_secret_access_key=config['secret_access_key'],
-        )
         for url in selected_media:
-            if Media.objects.filter(blog=blog, url=url).exists():
-                try:
-                    prefix = f"{config['public_url']}/"
-                    if not url.startswith(prefix):
-                        raise ValueError
-                    key = url[len(prefix):]
-                except ValueError:
-                    return HttpResponseForbidden("Error: Media storage is not configured for this URL")
-                client.delete_object(Bucket=config['bucket'], Key=key)
-                Media.objects.filter(blog=blog, url=url).delete()
-            else:
+            if not Media.objects.filter(blog=blog, url=url).exists():
                 return HttpResponseForbidden("Error: Attempted to delete unauthorized media")
+            path = urlsplit(url).path
+            if path.startswith('/media-files/') and StoredAsset.objects.filter(path=path, blog=blog).exists():
+                StoredAsset.objects.filter(path=path, blog=blog).delete()
+                Media.objects.filter(blog=blog, url=url).delete()
+                continue
+            config = get_storage_config()
+            prefix = f"{config['public_url']}/"
+            if not config['bucket'] or not config['public_url'] or not url.startswith(prefix):
+                return HttpResponseForbidden("Error: Media storage is not configured for this URL")
+            client = boto3.session.Session().client(
+                's3', endpoint_url=config['endpoint_url'], region_name=config['region'],
+                aws_access_key_id=config['access_key_id'], aws_secret_access_key=config['secret_access_key'],
+            )
+            client.delete_object(Bucket=config['bucket'], Key=url[len(prefix):])
+            Media.objects.filter(blog=blog, url=url).delete()
 
             
         

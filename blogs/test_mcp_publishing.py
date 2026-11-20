@@ -1,6 +1,7 @@
 import os
 from unittest.mock import MagicMock, patch
 
+from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TransactionTestCase, override_settings
@@ -24,6 +25,23 @@ class PublishingTests(TransactionTestCase):
         self.assertEqual(run.call_args.kwargs['transport'], 'stdio')
         self.assertEqual(set(server._tool_manager._tools), {'list_posts', 'get_post', 'create_post', 'update_post'})
 
+    @patch('mcp.server.fastmcp.FastMCP.run', autospec=True)
+    def test_tools_access_database_from_async_context(self, run):
+        call_command('publishing_mcp', skip_checks=True)
+        server = run.call_args.args[0]
+        async def exercise():
+            draft = await server._tool_manager.call_tool('create_post', {
+                'title': 'Async', 'slug': 'async', 'content': 'body', 'tags': [],
+            })
+            self.assertEqual((await server._tool_manager.call_tool('get_post', {'uid': draft['uid']}))['content'], 'body')
+            self.assertEqual(len(await server._tool_manager.call_tool('list_posts', {})), 1)
+            updated = await server._tool_manager.call_tool('update_post', {
+                'uid': draft['uid'], 'expected_modified': draft['last_modified'],
+                'title': 'Async', 'slug': 'async', 'content': 'updated', 'tags': [], 'published': True,
+            })
+            self.assertTrue(updated['published'])
+        async_to_sync(exercise)()
+
     def test_create_draft_then_publish_and_reject_stale_revision(self):
         draft = publishing.save_post('标题', 'hello', '正文', ['技术'], False)
         self.assertFalse(draft['published'])
@@ -44,25 +62,22 @@ class PublishingTests(TransactionTestCase):
             with self.assertRaisesMessage(ValueError, 'SINGLE_BLOG'):
                 publishing.list_posts()
 
-    @patch.dict(os.environ, {'PLANTUML_JAR': '/plantuml.jar', 'OBJECT_STORAGE_BUCKET': 'bucket',
-                             'OBJECT_STORAGE_PUBLIC_URL': 'https://images.example'})
-    @patch('blogs.mcp_publishing.boto3.session.Session')
+    @patch.dict(os.environ, {'PLANTUML_JAR': '/plantuml.jar', 'MAIN_SITE_HOSTS': 'example.com'})
     @patch('blogs.mcp_publishing.subprocess.run')
-    def test_diagrams_render_and_upload_before_save(self, run, session):
+    def test_diagrams_render_and_upload_before_save(self, run):
         run.return_value = MagicMock(stdout=b'\x89PNG\r\n\x1a\nimage')
         result = publishing.save_post('Diagram', 'diagram', 'Before\n```plantuml\n@startuml\nA -> B\n@enduml\n```\nAfter', [], True)
-        self.assertIn('![PlantUML diagram](https://images.example/personal/plantuml/', result['content'])
+        self.assertIn('![PlantUML diagram](https://example.com/media-files/', result['content'])
         self.assertNotIn('```plantuml', result['content'])
         self.assertIn('-DPLANTUML_SECURITY_PROFILE=SECURE', run.call_args.args[0])
-        session.return_value.client.return_value.put_object.assert_called_once()
+        from blogs.models import StoredAsset
+        self.assertEqual(bytes(StoredAsset.objects.get().data), run.return_value.stdout)
 
-    @patch.dict(os.environ, {'PLANTUML_JAR': '/plantuml.jar', 'OBJECT_STORAGE_BUCKET': 'bucket',
-                             'OBJECT_STORAGE_PUBLIC_URL': 'https://images.example'})
-    @patch('blogs.mcp_publishing.boto3.session.Session')
+    @patch.dict(os.environ, {'PLANTUML_JAR': '/plantuml.jar', 'MAIN_SITE_HOSTS': 'example.com'})
+    @patch('blogs.mcp_publishing.store_asset', side_effect=OSError('storage failed'))
     @patch('blogs.mcp_publishing.subprocess.run')
-    def test_upload_failure_does_not_publish(self, run, session):
+    def test_upload_failure_does_not_publish(self, run, store):
         run.return_value = MagicMock(stdout=b'\x89PNG\r\n\x1a\nimage')
-        session.return_value.client.return_value.put_object.side_effect = OSError('upload failed')
         with self.assertRaises(OSError):
             publishing.save_post('Diagram', 'diagram', '```plantuml\n@startuml\n@enduml\n```', [], True)
         self.assertFalse(Post.objects.filter(slug='diagram').exists())

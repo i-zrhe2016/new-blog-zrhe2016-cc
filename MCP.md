@@ -5,8 +5,8 @@ MCP 服务作为 Django 管理命令运行，使用标准输入输出，不监�
 ## 部署准备
 
 1. 将代码和 `requirements.txt` 部署到运行博客的容器，安装依赖并重启或重建容器。容器必须访问与网站相同的 SQLite 数据库和内容目录。`SINGLE_BLOG=True` 且数据库必须恰好有一个博客，否则命令拒绝启动。
-2. 在容器内安装 Java，并将可信来源的 PlantUML jar 放入容器可读的位置，将 `PLANTUML_JAR` 设置为该容器内的绝对路径。仅普通 Markdown 时不需要 Java 或 jar。
-3. PlantUML 图片使用现有对象存储配置：`OBJECT_STORAGE_BUCKET`、`OBJECT_STORAGE_PUBLIC_URL`，以及部署需要的 `OBJECT_STORAGE_ENDPOINT_URL`、`OBJECT_STORAGE_REGION`、访问密钥和 `OBJECT_STORAGE_ACL`。公开文章中的图片 URL 必须可被读者访问。对象上传成功后才保存文章；已有上传图片不会因后续保存失败而自动删除。
+2. 标准部署会在应用镜像中安装 Java、PlantUML 和中文字体，并将 `PLANTUML_JAR` 指向 jar；自定义镜像需提供相同依赖和环境变量。仅普通 Markdown 时不需要 Java 或 jar。
+3. PlantUML 图片存入网站的 SQLite 数据库。确保 `MAIN_SITE_HOSTS` 的首个域名是读者可以访问的公开域名，以生成可访问的图片 URL。
 4. 确认客户端已登录同一个 tailnet，并可使用 Tailscale SSH 登录部署主机。下面的 `root@deploy`、容器名和目录应按实际部署调整；使用的账号需要运行 Docker Compose 的权限。不要将 SSH 登录欢迎信息输出到标准输出，否则会破坏 MCP 消息。
 
 支持 stdio 的 MCP 客户端可以使用以下配置（字段名称视客户端而定）：
@@ -41,7 +41,7 @@ Alice -> Bob: hello
 ```
 ````
 
-渲染在 PlantUML 的 `SECURE` 模式下进行，不支持依赖本地文件或远程 URL 的 include。渲染失败、对象存储未配置或上传失败时文章不会保存。文章正常保存后会走现有的内容快照导出逻辑；快照导出失败不会回滚数据库，重试机制见 [CONTENT.md](CONTENT.md)。
+渲染在 PlantUML 的 `SECURE` 模式下进行，不支持依赖本地文件或远程 URL 的 include。渲染或数据库写入失败时文章不会保存；图片和文章保存在同一数据库事务中。SQLite 数据库是文章的主要存储；内容快照是否自动导出取决于 `PERSONAL_CONTENT_AUTO_EXPORT`，详见 [CONTENT.md](CONTENT.md)。
 
 验证：
 

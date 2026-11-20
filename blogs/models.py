@@ -334,6 +334,14 @@ class Stylesheet(models.Model):
         return self.title
 
 
+class StoredAsset(models.Model):
+    # Public URL path, also used to preserve old /static/migrated/ links.
+    blog = models.ForeignKey(Blog, on_delete=models.CASCADE, null=True, blank=True, related_name='stored_assets')
+    path = models.CharField(max_length=500, unique=True)
+    content_type = models.CharField(max_length=200)
+    data = models.BinaryField()
+
+
 class Media(models.Model):
     blog = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name='media')
     url = models.URLField(max_length=500)

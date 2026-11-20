@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from blogs.views import blog, dashboard, studio, feed, discover, analytics, emailer, signup_flow, media, upvotes
-from blogs import subscriptions
+from blogs import subscriptions, stored_assets
 
 import os
 from functools import wraps
@@ -38,6 +38,8 @@ urlpatterns = [
     path('<id>/dashboard/settings/advanced/', main_site_only(studio.advanced_settings), name='advanced_settings'),
     path('<id>/dashboard/directives/', main_site_only(studio.directive_edit), name="directive_edit"),
     path('<id>/dashboard/email-list/', main_site_only(emailer.email_list), name='email_list'),
+
+    path('media-files/<str:asset_id>/<str:filename>', stored_assets.serve_asset, name='stored_asset'),
 
     # Media
     path('<id>/dashboard/media/', main_site_only(media.media_center), name='media_center'),

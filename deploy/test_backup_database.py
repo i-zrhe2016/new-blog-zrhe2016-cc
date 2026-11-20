@@ -21,10 +21,14 @@ class BackupTests(unittest.TestCase):
                 db.execute('PRAGMA journal_mode=WAL')
                 db.execute('CREATE TABLE posts (body TEXT)')
                 db.execute('INSERT INTO posts VALUES (?)', ('draft',))
+                db.execute('CREATE TABLE blogs_storedasset (path TEXT, data BLOB)')
+                db.execute('INSERT INTO blogs_storedasset VALUES (?, ?)', ('/media-files/image.png', b'\x89PNG\x00image'))
                 db.commit()
                 result = backup(root / 'live.db', assets, root / 'backups')
                 with closing(sqlite3.connect(result / 'database.db')) as restored:
                     self.assertEqual(restored.execute('SELECT body FROM posts').fetchone(), ('draft',))
+                    self.assertEqual(restored.execute('SELECT path, data FROM blogs_storedasset').fetchone(),
+                                     ('/media-files/image.png', b'\x89PNG\x00image'))
                 with tarfile.open(result / 'assets.tar.gz') as archive:
                     self.assertEqual(archive.extractfile('assets/image.svg').read(), b'image')
 

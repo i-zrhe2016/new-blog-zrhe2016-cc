@@ -5,12 +5,11 @@ import os
 import re
 import subprocess
 
-import boto3
 from django.db import transaction
 from django.utils import timezone
 
 from blogs.models import Blog, Post
-from blogs.views.media import get_storage_config
+from blogs.stored_assets import store_asset
 
 DIAGRAM = re.compile(r'^```plantuml[^\n]*\r?\n(.*?)^```[ \t]*$', re.MULTILINE | re.DOTALL | re.IGNORECASE)
 SLUG = re.compile(r'^[\w-]+(?:/[\w-]+)*$', re.UNICODE)
@@ -33,9 +32,6 @@ def render_diagrams(content, blog):
         jar = os.getenv('PLANTUML_JAR')
         if not jar:
             raise ValueError('PLANTUML_JAR must point to a local PlantUML jar.')
-        config = get_storage_config()
-        if not config['bucket'] or not config['public_url']:
-            raise ValueError('Object storage must be configured for PlantUML images.')
         try:
             result = subprocess.run(
                 ['java', '-DPLANTUML_SECURITY_PROFILE=SECURE', '-jar', jar, '-charset', 'UTF-8', '-tpng', '-pipe'],
@@ -47,16 +43,8 @@ def render_diagrams(content, blog):
         if not result.stdout.startswith(b'\x89PNG\r\n\x1a\n') or len(result.stdout) > 10 * 1024 * 1024:
             raise ValueError('PlantUML did not produce a valid PNG within the size limit.')
         digest = hashlib.sha256(result.stdout).hexdigest()
-        key = f'{blog.subdomain}/plantuml/{digest}.png'
-        client = boto3.session.Session().client(
-            's3', endpoint_url=config['endpoint_url'], region_name=config['region'],
-            aws_access_key_id=config['access_key_id'], secret_aws_access_key=config['secret_access_key'],
-        )
-        params = {'Bucket': config['bucket'], 'Key': key, 'Body': result.stdout, 'ContentType': 'image/png'}
-        if config['acl']:
-            params['ACL'] = config['acl']
-        client.put_object(**params)
-        return f"![PlantUML diagram]({config['public_url']}/{key})"
+        url = store_asset(result.stdout, 'image/png', f'{digest}.png', blog)
+        return f'![PlantUML diagram]({url})'
 
     output = DIAGRAM.sub(render, content)
     if re.search(r'^```plantuml\b', output, re.MULTILINE | re.IGNORECASE):
@@ -94,8 +82,8 @@ def save_post(title, slug, content, tags, published, uid='', expected_modified='
         raise ValueError('Tags must be strings of at most 100 characters (maximum 100 tags).')
     if uid and not expected_modified:
         raise ValueError('Updating requires the last_modified value returned by get_post.')
-    content = render_diagrams(content, blog)
     with transaction.atomic():
+        content = render_diagrams(content, blog)
         if uid:
             post = Post.objects.get(blog=blog, uid=uid, is_page=False)
             if post.last_modified.isoformat() != expected_modified:
