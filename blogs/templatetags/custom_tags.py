@@ -131,6 +131,11 @@ class MyRenderer(HTMLRenderer):
             return ''
     
     def block_code(self, code, info=None):
+        # Mermaid diagrams are rendered client-side from the raw diagram source
+        language = (info or '').split(None, 1)[0].lower()
+        if language == 'mermaid':
+            return f'<pre class="mermaid">{escape(code)}</pre>'
+
         if info is None:
             info = 'text'
         try:
