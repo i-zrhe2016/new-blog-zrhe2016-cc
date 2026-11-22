@@ -57,6 +57,28 @@
 
 {% endblock %}
 
+{% if request.get_host == 'blog.zrhe2016.cc' %}
+<style>
+  .chat-with-me {margin:2.5rem 0 1.5rem}
+  .chat-with-me summary {display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;list-style:none}
+  .chat-with-me summary::-webkit-details-marker {display:none}
+  .chat-with-me summary:hover {text-decoration:underline}
+  .chat-with-me .chat-panel {margin-top:1rem;max-width:28rem;border:1px solid currentColor;border-radius:10px;padding:1rem}
+  .chat-with-me .chat-panel p {margin:.35rem 0 1rem}
+  .chat-with-me .chat-panel a {display:inline-block;padding:.35rem .65rem;border:1px solid currentColor;border-radius:6px;text-decoration:none}
+  .chat-with-me .chat-panel a:hover {text-decoration:underline}
+</style>
+<section class="chat-with-me" aria-label="Chat with me">
+  <details>
+    <summary>↗ Chat with me</summary>
+    <div class="chat-panel">
+      <p>想聊技术、博客或者其他话题？欢迎联系我。</p>
+      <a href="https://github.com/i-zrhe2016" target="_blank" rel="noopener noreferrer">通过 GitHub 联系我 ↗</a>
+    </div>
+  </details>
+</section>
+{% endif %}
+
 {% block footer %}
 {% if blog.user.settings.upgraded and blog.footer_directive %}
 <span id="footer-directive">
