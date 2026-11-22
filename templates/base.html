@@ -134,6 +134,7 @@
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'strict',
+          flowchart: { htmlLabels: false },
           theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
         });
         await mermaid.run({ nodes: diagrams, suppressErrors: true });
