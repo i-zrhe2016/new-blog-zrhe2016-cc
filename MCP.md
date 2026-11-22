@@ -43,6 +43,19 @@ Alice -> Bob: hello
 
 渲染在 PlantUML 的 `SECURE` 模式下进行，不支持依赖本地文件或远程 URL 的 include。渲染或数据库写入失败时文章不会保存；图片和文章保存在同一数据库事务中。SQLite 数据库是文章的主要存储；内容快照是否自动导出取决于 `PERSONAL_CONTENT_AUTO_EXPORT`，详见 [CONTENT.md](CONTENT.md)。
 
+正文中的 ` ```mermaid ` 代码块不会在服务器端转换，而是原样保存，由读者浏览器渲染。页面中存在图表时才会从 jsDelivr 加载 Mermaid 11（流程图、时序图等），并跟随读者系统的浅色/深色主题；脚本加载失败时代码块保持原样显示。例如：
+
+````markdown
+```mermaid
+graph TD;
+    A[开始] --> B{判断};
+    B -->|是| C[继续];
+    B -->|否| D[结束];
+```
+````
+
+Mermaid 语法错误只会让对应图表显示为错误提示，不影响文章其余内容。
+
 验证：
 
 ```bash

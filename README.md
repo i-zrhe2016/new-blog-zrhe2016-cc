@@ -15,6 +15,6 @@ Simple, super-fast, with no trackers. A place where (human) words matter most.
 
 个人博客模式支持使用 MCP 创建、读取和更新文章，也可将草稿发布。MCP 客户端通过 Tailscale SSH 连接服务器上的管理命令，不需要额外开放 HTTP 端口；访问权限由 Tailscale SSH 策略和服务器账号控制。
 
-文章中的 PlantUML 代码块会在服务器本地渲染为 PNG，上传到已配置的对象存储，再作为图片嵌入正文。部署需要安装 MCP 依赖；渲染图表还需要 Java、PlantUML jar 和对象存储。配置方法和客户端示例见 [MCP 发布指南](MCP.md)。
+文章中的 PlantUML 代码块会在服务器本地渲染为 PNG，上传到已配置的对象存储，再作为图片嵌入正文。部署需要安装 MCP 依赖；渲染图表还需要 Java、PlantUML jar 和对象存储。配置方法和客户端示例见 [MCP 发布指南](MCP.md)。Mermaid 代码块则原样保存，读者浏览器在页面存在图表时才加载脚本并渲染。
 
 *Built and maintained by [Herman](https://herman.bearblog.dev)*
