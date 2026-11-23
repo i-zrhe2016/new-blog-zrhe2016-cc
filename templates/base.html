@@ -134,6 +134,8 @@
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'strict',
+          // Mermaid 11's top-level setting takes precedence over flowchart.htmlLabels.
+          htmlLabels: false,
           flowchart: { htmlLabels: false },
           theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
         });
