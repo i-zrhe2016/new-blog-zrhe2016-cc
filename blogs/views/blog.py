@@ -58,7 +58,10 @@ def home(request):
         # Don't cache here because of dashboard
         return render(request, 'landing.html')
 
-    all_posts = blog.posts.filter(publish=True, published_date__lte=timezone.now(), is_page=False).defer('content').order_by('-published_date')
+    all_posts = blog.posts.filter(publish=True, published_date__lte=timezone.now(), is_page=False)
+    if os.getenv('SINGLE_BLOG') == 'True':
+        all_posts = all_posts.filter(homepage_featured=True)
+    all_posts = all_posts.defer('content').order_by('-published_date')
 
     meta_description = blog.meta_description or unmark(blog.content)[:157] + '...'
     

@@ -171,6 +171,7 @@ class Post(models.Model):
     last_modified = models.DateTimeField(auto_now_add=True, blank=True)
     all_tags = models.TextField(default='[]')
     publish = models.BooleanField(default=True, db_index=True)
+    homepage_featured = models.BooleanField(default=False, db_index=True)
     discoverable = models.BooleanField(default=True, db_index=True)
     is_page = models.BooleanField(default=False, db_index=True)
     content = models.TextField()
