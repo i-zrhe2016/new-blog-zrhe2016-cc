@@ -9,12 +9,12 @@ Simple, super-fast, with no trackers. A place where (human) words matter most.
 - [Report a bug or request a feature](https://herman.bearblog.dev/contact/)
 - [Contribution information](CONTRIBUTIONS.md)
 - [个人博客内容存储、Git 同步与恢复](CONTENT.md)
-- [通过 Tailscale 使用 MCP 发布文章](MCP.md)
+- [通过 Tailscale 使用 MCP 管理文章和草稿](MCP.md)
 
-## 通过 MCP 发布文章
+## 通过 MCP 管理个人博客
 
-个人博客模式支持使用 MCP 创建、读取和更新文章，也可将草稿发布。MCP 客户端通过 Tailscale SSH 连接服务器上的管理命令，不需要额外开放 HTTP 端口；访问权限由 Tailscale SSH 策略和服务器账号控制。
+个人博客模式支持通过 MCP 搜索文章、按标签筛选、管理独立页面，以及创建、局部更新、发布和撤回文章。隐藏文章就是将它转回草稿，正文和原链接地址不会被删除。MCP 客户端通过 Tailscale SSH 连接服务器上的管理命令，不需要额外开放 HTTP 端口。
 
-文章中的 PlantUML 代码块会在服务器本地渲染为 PNG，上传到已配置的对象存储，再作为图片嵌入正文。部署需要安装 MCP 依赖；渲染图表还需要 Java、PlantUML jar 和对象存储。配置方法和客户端示例见 [MCP 发布指南](MCP.md)。Mermaid 代码块则原样保存，读者浏览器在页面存在图表时才加载脚本并渲染。
+文章中的 PlantUML 代码块会在服务器本地渲染为 PNG，存入网站的 SQLite 数据库后嵌入正文；Mermaid 代码块原样保存，由读者浏览器按需渲染。客户端配置、工具参数和隐藏文章的方法见 [MCP 使用指南](MCP.md)。
 
 *Built and maintained by [Herman](https://herman.bearblog.dev)*

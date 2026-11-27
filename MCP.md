@@ -1,4 +1,4 @@
-# 通过 Tailscale 发布文章
+# 通过 Tailscale 使用 MCP 管理博客
 
 MCP 服务作为 Django 管理命令运行，使用标准输入输出，不监听 HTTP 端口。客户端通过 `tailscale ssh` 在部署主机启动它；访问权限由 Tailscale SSH 策略、目标系统账号及 Docker 权限控制。不要把此命令包装为公网 HTTP 服务。可以按需限制 Tailscale SSH 策略中的来源设备和目标账号。
 
@@ -26,10 +26,31 @@ MCP 服务作为 Django 管理命令运行，使用标准输入输出，不监�
 
 ## 工具
 
-- `list_posts`：列出最近最多 200 篇文章和草稿。
-- `get_post`：按 UID 读取文章正文和 `last_modified`。
-- `create_post`：创建文章；`published` 默认 `false`，明确设为 `true` 才发布。`slug` 为站内路径，`tags` 为字符串数组。
-- `update_post`：替换标题、slug、正文、标签和发布状态。必须提供 `get_post` 返回的 `last_modified`，以检测已经发生的修改；请先读取现有文章再更新。
+| 工具 | 常用操作 |
+| --- | --- |
+| `get_blog_info` | 查看博客首页、文章列表、订阅源地址、导航和写作模板。 |
+| `list_posts` | 按最后修改时间倒序列出内容，支持标题、slug 或 Markdown 关键词搜索（`query`），以及 `status`（`all` / `draft` / `published`）、`kind`（`article` / `page` / `all`）、`include_tags`、`exclude_tags`、`limit`（1–200）、`offset`（从 0 开始）。默认列出最近 200 篇文章（含草稿，不含独立页面）；标签精确匹配。 |
+| `list_tags` | 列出文章标签和使用次数，支持按发布状态筛选和分页，默认只统计已标为发布的文章。 |
+| `get_post` | 按 `uid` 或 `slug` 读取文章或独立页面的 Markdown、发布状态和 `last_modified`；二选一。 |
+| `get_preview_link` | 按 `uid` 取预览链接。草稿链接含访问令牌，**任何持有该链接的人都可查看草稿**，不要公开分享。普通读取和列表不会返回草稿预览令牌。 |
+| `create_post` | 创建文章，`is_page: true` 可创建独立页面。默认保存为草稿，明确传 `published: true` 才发布。 |
+| `update_post` | 只修改传入的字段；不传 `published` 就保留原发布状态，传 `tags: []` 可清空标签。必须传 `uid` 和 `expected_modified`。 |
+| `set_post_status` | 只变更发布状态：`draft` 隐藏文章，`published` 发布或恢复。必须传 `uid` 和 `expected_modified`。 |
+
+### 隐藏文章（转为草稿）
+
+1. 用 `get_post` 按 slug 或 UID 读取文章，拿到 `uid` 和 `last_modified`。
+2. 调用 `set_post_status`，传入该 `uid`、把 `last_modified` 原样作为 `expected_modified`，并设置 `status: "draft"`。如果文章已被其他编辑更新，工具会拒绝写入；请先重新读取。
+3. 草稿不会出现在首页、文章列表、RSS 或站点地图，普通文章链接返回 404。正文、slug、标签和已有发布日期都保留。恢复时重新读取文章，再调用同一工具设置 `status: "published"`。已被第三方保存的副本和已发出的草稿预览链接不会因此失效。
+
+其他常用调用参数：
+
+- 找首页「优选」文章：`list_posts({"status":"published","include_tags":["优选"]})`。MCP 的 `published` 按发布开关过滤；首页还会按发布日期过滤掉未来日期的文章。
+- 查找待发文章：`list_posts({"status":"draft","query":"数据库","limit":20})`。
+- 只改标签：`update_post({"uid":"…","expected_modified":"…","tags":["优选","数据库"]})`。
+- 维护独立页面：先用 `list_posts({"kind":"page"})` 或 `get_post({"slug":"about"})` 定位，再用 `update_post` 局部修改。
+
+### Markdown 和图表
 
 正文中的 ` ```plantuml ` 代码块会用本地 PlantUML 转成 PNG，并替换为 Markdown 图片链接。例如：
 
