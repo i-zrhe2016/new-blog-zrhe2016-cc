@@ -77,6 +77,7 @@ class PublishingTests(TransactionTestCase):
 
     def test_draft_is_hidden_from_public_views_and_can_be_republished(self):
         published = publishing.save_post('精选文章', 'featured', '正文', ['优选'], True)
+        Post.objects.filter(uid=published['uid']).update(homepage_featured=True)
         paths = ('/', '/blog/', '/rss/', '/sitemap.xml')
         for path in paths:
             self.assertContains(self.client.get(path), '/featured/')
