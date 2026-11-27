@@ -13,7 +13,6 @@ from django.db.models import Q
 from django.urls import resolve
 from django.utils import timezone
 
-from blogs.helpers import filter_posts_by_tags
 from blogs.models import Blog, Post
 from blogs.stored_assets import store_asset
 
@@ -111,6 +110,11 @@ def clean_tags(tags):
     return list(dict.fromkeys(tag.strip() for tag in tags if tag.strip()))
 
 
+def matching_tags(posts, include_tags=(), exclude_tags=()):
+    included, excluded = set(include_tags), set(exclude_tags)
+    return [post for post in posts if included.issubset(post.tags) and not excluded.intersection(post.tags)]
+
+
 def list_posts(query='', status='all', kind='article', include_tags=(), exclude_tags=(), limit=200, offset=0):
     validate_pagination(limit, offset)
     query = query.strip()
@@ -120,7 +124,7 @@ def list_posts(query='', status='all', kind='article', include_tags=(), exclude_
     if query:
         posts = posts.filter(Q(title__icontains=query) | Q(slug__icontains=query) | Q(content__icontains=query))
     if include_tags or exclude_tags:
-        posts = filter_posts_by_tags(posts, clean_tags(include_tags), clean_tags(exclude_tags))
+        posts = matching_tags(posts, clean_tags(include_tags), clean_tags(exclude_tags))
     return [describe(post) for post in posts[offset:offset + limit]]
 
 
