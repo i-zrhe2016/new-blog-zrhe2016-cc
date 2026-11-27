@@ -18,7 +18,7 @@ class PublishingTests(TransactionTestCase):
     def setUp(self):
         Stylesheet.objects.create(identifier='default', css='body {}')
         owner = get_user_model().objects.create_user(username='mcp-test')
-        self.blog = Blog.objects.create(user=owner, title='Blog', subdomain='personal')
+        self.blog = Blog.objects.create(user=owner, title='Blog', subdomain='personal', content='')
 
     @patch('mcp.server.fastmcp.FastMCP.run', autospec=True)
     def test_command_registers_stdio_tools(self, run):
