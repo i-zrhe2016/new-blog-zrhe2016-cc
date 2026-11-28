@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 HOMEPAGE_FEATURED_SLUGS = (
-    'kubernetes-batch-deployment-node-notready-ebs-io',
     'mihomo-tailscale-magicdns-conflict',
     'magpie-deepseek-4-1-claude-code',
     'dynamic-cpu-for-build-image',
